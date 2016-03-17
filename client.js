@@ -84,7 +84,7 @@ function setup(plugin, imports, register) {
         return next(action)
     }
   }
-  ui.reduxMiddleware.unshift(middleware)
+  ui.reduxMiddleware.push(middleware)
 
   ui.reduxReducerMap['myDocuments'] = function(state, action) {
     if(!state) {
