@@ -287,5 +287,5 @@ function setup(plugin, imports, register) {
 var Widget = function (vnode){this.node = vdom.create(vnode)}
 Widget.prototype.type = "Widget"
 Widget.prototype.init = function(){return this.node}
-Widget.prototype.update = function(previous, domNode){return null}
+Widget.prototype.update = function(previous, domNode){this.node = domNode; return null}
 Widget.prototype.destroy = function(domNode){}
