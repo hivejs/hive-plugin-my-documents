@@ -8,6 +8,8 @@ const FETCH_READS = 'MYDOCUMENTS_FETCH_READS'
 const FETCH_WRITES = 'MYDOCUMENTS_FETCH_WRITES'
 const LOAD = 'MYDOCUMENTS_LOAD'
 const DOCUMENT_CREATE = 'MYDOCUMENTS_DOCUMENT_CREATE'
+const CHOOSEUSER_SEARCH = 'MYDOCUMENTS_CHOOSEUSER_SEARCH'
+const USER_SEARCH = 'MYDOCUMENTS_USER_SEARCH'
 
 function checkStatus(response) {
   if (response.status >= 200 && response.status < 300) {
@@ -48,7 +50,10 @@ function setup(plugin, imports, register) {
     switch(action.type) {
       case DOCUMENT_CREATE:
         return fetch(ui.baseURL+'/api/v1/documents/',{
-            headers: {Authorization: 'token '+store.getState().session.grant.access_token}
+            headers: {
+              Authorization: 'token '+store.getState().session.grant.access_token
+            , 'Content-type': 'application/vnd.api+json'
+            }
           , method: 'post'
           , body: JSON.stringify({data:{
               type: 'document'
@@ -147,16 +152,25 @@ function setup(plugin, imports, register) {
       , writes: yield myDocuments.action_loadWrites(userId)
       }}
     }
+  , action_chooseUserSearch: function*(searchString) {
+      yield { type: CHOOSEUSER_SEARCH
+            , payload: yield {type: USER_SEARCH, payload: searchString}
+            }
+    }
   }
 
   ui.onRenderNavbarLeft((store, children) => {
     if(store.getState().session.user) children.push(renderMenu(store))
   })
 
-  ui.onRenderBody((store, children) => {
-    if(store.getState().myDocuments.active) {
-      if(store.getState().myDocuments.active == 'new') children.push(renderNewDocument(store))
+  ui.onRenderBody((store, children, props) => {
+    const state = store.getState()
+    if(state.myDocuments.active) {
+      if(state.myDocuments.active == 'new') children.push(renderNewDocument(store))
       else children.push(render(store))
+    }
+    if(state.editor.document && state.editor.document.relationships.owner.data.id == state.session.user.id) {
+      props.className = (props.className? props.className+' ' : '') + 'is-owner'
     }
   })
 
@@ -171,6 +185,7 @@ function setup(plugin, imports, register) {
     const state = store.getState().myDocuments
     var children = [
       h('h1', 'My Documents')
+    , h('h3', 'Your own documents')
     ]
     if(!state.owns) {
       children.push(
@@ -188,6 +203,32 @@ function setup(plugin, imports, register) {
 	  , 'ev-click': (evt) => store.dispatch(ui.action_route('/documents/'+document.id))
 	  }, document.attributes.title))
 	))
+      )
+    }
+
+    if(state.writes.length || state.reads.length) {
+      children.push(
+	h('h3', 'Documents by others')
+      )
+      
+      children.push(
+	h('ul.list-group', state.writes.map((document) =>
+	  h('li.list-group-item', h('a',{
+	    href: 'javascript:void(0)'
+	  , 'ev-click': (evt) => store.dispatch(ui.action_route('/documents/'+document.id))
+	  }, document.attributes.title))
+	).concat(
+          state.reads.map((document) =>
+	    h('li.list-group-item', [
+              h('a',{
+		href: 'javascript:void(0)'
+	      , 'ev-click': (evt) => store.dispatch(ui.action_route('/documents/'+document.id))
+	      }, document.attributes.title)
+	    , h('i.glyphicon.glyphicon-lock', {title: 'read-only'})
+	    , h('span.sr-only', '(read-only)')
+            ])
+	  )
+        ))
       )
     }
 
@@ -221,6 +262,22 @@ function setup(plugin, imports, register) {
         , type: type.node.value
         }))
       }, 'Create'))
+    ])
+  }
+
+  function renderChooseUser(store, cb) {
+    const state = store.getState().myDocuments
+    return h('div.MyDocuments__ChooseUser',[
+      new Widget(h('input[type=text].form-control',{
+        placeholder: 'Search for a user...'
+      , 'ev-keyup': (evt) => store.dispatch(myDocuments.action_chooseUserSearch(evt.currentTarget.value))
+      }))
+    , h('div.MyDocuments__ChooseUser__results', state.chooseUser.results.map((user) =>
+        h('div.MyDocuments__ChooseUser__User', [
+          user.attributes.name
+        , h('a', {href:'javascript:void(0)', 'ev-click': (evt) => cb(null, user.id)}, 'choose')
+        ])
+      ))
     ])
   }
 

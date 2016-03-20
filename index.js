@@ -9,6 +9,7 @@ function setup(plugin, imports, register) {
     , http = imports.http
 
   ui.registerModule(path.join(__dirname, 'client.js'))
+  ui.registerStylesheet(path.join(__dirname, 'index.css'))
 
   http.router.get('/', ui.bootstrapMiddleware())
 

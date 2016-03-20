@@ -1,0 +1,7 @@
+/**
+ * Non-owners will not see the admin settings, as they're not
+ * allowed to edit them anyway
+ */
+.body:not(.is-owner) .Settings__Document_Tab {
+  display: none;
+}
