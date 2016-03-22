@@ -1,6 +1,6 @@
 {
   "name": "hive-plugin-my-documents",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Document management plugin for hive.js",
   "main": "index.js",
   "dependencies": {
