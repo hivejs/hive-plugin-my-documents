@@ -29,9 +29,11 @@ const NEWDOCUMENT_RESET = 'MYDOCUMENTS_NEWDOCUMENT_RESET'
 const NEWDOCUMENT_ALLOWUSER = 'MYDOCUMENTS_NEWDOCUMENT_ALLOWUSER'
 const NEWDOCUMENT_ALLOWPUBLIC = 'MYDOCUMENTS_NEWDOCUMENT_ALLOWPUBLIC'
 const NEWDOCUMENT_REMOVECOLLAB = 'MYDOCUMENTS_NEWDOCUMENT_REMOVECOLLAB'
-const CHOOSEUSER_SEARCH = 'MYDOCUMENTS_CHOOSEUSER_SEARCH'
-const USERS_LOAD = 'MYDOCUMENTS_USERS_LOAD'
 const USER_SEARCH = 'MYDOCUMENTS_USER_SEARCH'
+const USERS_LOAD = 'MYDOCUMENTS_USERS_LOAD'
+const CHOOSEUSER_SEARCHING = 'MYDOCUMENTS_CHOOSEUSER_SEARCHING'
+const CHOOSEUSER_SEARCHRESULTS = 'MYDOCUMENTS_CHOOSEUSER_SEARCHRESULTS'
+const CHOOSEUSER_DROPRESULTS = 'MYDOCUMENTS_CHOOSEUSER_DROPRESULTS'
 
 function checkStatus(response) {
   if (response.status >= 200 && response.status < 300) {
@@ -79,6 +81,16 @@ function setup(plugin, imports, register) {
       }
     }
     switch(action.type) {
+      case USER_SEARCH:
+        return fetch(ui.baseURL+'/api/v1/users?filter[name][contains]='+action.payload, {
+        headers: {
+            Authorization: 'token '+store.getState().session.grant.access_token
+          , 'Content-type': 'application/vnd.api+json'
+          }
+        })
+        .then(checkStatus)
+        .then((response) => response.json())
+        .then((json) => json.data)
       case DOCUMENT_CREATE:
         return fetch(ui.baseURL+'/api/v1/documents/',{
             headers: {
@@ -209,6 +221,34 @@ function setup(plugin, imports, register) {
       }
       return state
     }
+  , chooseUser: function(state, action) {
+      if (!state) {
+        return {
+          results: []
+        , searching: false
+        }
+      }
+      if (CHOOSEUSER_SEARCHING === action.type) {
+        return {
+          ...state
+        , searching: true
+        }
+      }
+      if (CHOOSEUSER_SEARCHRESULTS === action.type) {
+        return {
+          ...state
+        , results: action.payload
+        , searching: false
+        }
+      }
+      if (CHOOSEUSER_DROPRESULTS === action.type) {
+        return {
+          ...state
+        , results: []
+        }
+      }
+      return state
+    }
   , users: function(state, action) {
       if (!state) {
         return {}
@@ -273,10 +313,18 @@ function setup(plugin, imports, register) {
       return yield {type: USERS_LOAD, payload: user}
     }
   }
-  , action_chooseUserSearch: function*(searchString) {
-      yield { type: CHOOSEUSER_SEARCH
-            , payload: yield {type: USER_SEARCH, payload: searchString}
-            }
+  , chooseUser: {
+      action_search: function*(searchString) {
+        yield {type: CHOOSEUSER_SEARCHING}
+        var users = yield {type: USER_SEARCH, payload: searchString}
+        for (var i=0; i < users.length; i++) {
+          yield {type: USERS_LOAD, payload: users[i]}
+        }
+        yield { type: CHOOSEUSER_SEARCHRESULTS, payload: users.map(user => user.id)}
+      }
+    , action_dropResults: function() {
+        return {type: CHOOSEUSER_DROPRESULTS}
+      }
     }
   }
 
@@ -440,20 +488,29 @@ function setup(plugin, imports, register) {
   function renderChooseUser(store, cb) {
     const state = store.getState().myDocuments
     var username
-    return h('div.MyDocuments__ChooseUser.form-inline',[
-      h('div.form-group', username = new Widget(h('input[type=text].form-control',{
-        placeholder: 'Enter a user name'
-      //, 'ev-keyup': (evt) => store.dispatch(myDocuments.action_chooseUserSearch(evt.currentTarget.value))
-      })))
-    , /*h('div.MyDocuments__ChooseUser__results', state.chooseUser.results.map((user) =>
-        h('div.MyDocuments__ChooseUser__User', [
-          user.attributes.name
-        , h('a', {href:'javascript:void(0)', 'ev-click': (evt) => cb(null, user.id)}, 'choose')
-        ])
-      ))*/
-      h('div.form-group', h('button.btn.btn-default.MyDocuments__ChooseUser__submit', {
-        'ev-click': (evt) => cb(null, 1)
-      }, 'Add user'))
+    return h('div.MyDocuments__ChooseUser.form-group'
+    +(state.chooseUser.results.length? '.open' : ''), [
+      h('input[type=text].form-control',{
+        placeholder: 'Add a user'
+      , 'aria-label': 'Add a user as a collaborator'
+      , 'ev-keyup': (evt) => {
+          if (!evt.target.value) return store.dispatch(myDocuments.chooseUser.action_dropResults())
+          store.dispatch(myDocuments.chooseUser.action_search(evt.target.value))
+        }
+        // Blur: Timeout to allow clicks on the dropdown
+      , 'ev-blur': (evt) => setTimeout(() => store.dispatch(myDocuments.chooseUser.action_dropResults()), 100)
+      })
+    , h('ul.MyDocuments__ChooseUser__results.dropdown-menu', state.chooseUser.results.map((userId) =>
+        h('li.MyDocuments__ChooseUser__User',
+          h('a',{
+            href:'javascript:void(0)'
+          , 'ev-click': (evt) => {
+              store.dispatch(myDocuments.chooseUser.action_dropResults())
+              cb(null, userId)
+            }
+          }, state.users[userId].attributes.name)
+        )
+      ))
     ])
   }
 

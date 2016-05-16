@@ -5,9 +5,17 @@
 .body:not(.is-owner) .Settings__Document_Tab {
   display: none;
 }
-.MyDocuments__User {
+
+.MyDocuments__NewDocument__access {
   width: 100%;
-  max-width: 10cm;
+  max-width: 12cm;
+}
+
+.MyDocuments__collaborators {
+  margin-bottom: .25cm;
+}
+
+.MyDocuments__User {
   padding-bottom: .25cm;
   margin-bottom: .25cm;
   border-bottom: 1px lightgrey solid;
@@ -30,4 +38,11 @@
   .MyDocuments__User .form-group {
     margin-bottom: 0;
   }
+}
+
+.MyDocuments__ChooseUser {
+  position: relative;
+}
+.MyDocuments__ChooseUser__results {
+  width: 100%;
 }
