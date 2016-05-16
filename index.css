@@ -5,3 +5,29 @@
 .body:not(.is-owner) .Settings__Document_Tab {
   display: none;
 }
+.MyDocuments__User {
+  width: 100%;
+  max-width: 10cm;
+  padding-bottom: .25cm;
+  margin-bottom: .25cm;
+  border-bottom: 1px lightgrey solid;
+}
+.MyDocuments__User:last-child {
+  border-bottom: none;
+}
+.MyDocuments__User__name {
+  width: 5cm;
+  display: inline-block;
+  vertical-align: middle;
+}
+@media (min-width: 768px) {
+  .MyDocuments__User label {
+    width: 1cm;
+    margin-left: 0 !important;
+  }
+}
+@media (max-width: 767px) {
+  .MyDocuments__User .form-group {
+    margin-bottom: 0;
+  }
+}

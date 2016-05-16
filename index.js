@@ -17,12 +17,14 @@
 var path = require('path')
 
 module.exports = setup
-module.exports.consumes = ['ui', 'http', 'hooks']
+module.exports.consumes = ['ui', 'http', 'hooks', 'auth', 'orm']
 
 function setup(plugin, imports, register) {
   var ui = imports.ui
     , hooks = imports.hooks
     , http = imports.http
+    , auth = imports.auth
+    , orm = imports.orm
 
   ui.registerModule(path.join(__dirname, 'client.js'))
   ui.registerStylesheet(path.join(__dirname, 'index.css'))
@@ -56,6 +58,26 @@ function setup(plugin, imports, register) {
     models.user.attributes['writes'] = {
       collection: 'document'
     , via: 'writers'
+    }
+  })
+
+  auth.registerAuthorizationProvider(function*(user, action, data) {
+    switch(action) {
+    case 'document:read':
+      var doc = yield orm.collections.document.findOne({id: data.id}).populate('readers')
+      if (doc.settings && doc.settings['myDocuments:publicAccess'] > 0) return true
+      if (user.id === doc.owner) return true
+      return doc.readers.some(reader => reader.id === user.id)
+    case 'document:change':
+      var doc = yield orm.collections.document.findOne({id: data.id}).populate('writers')
+      if (doc.settings && doc.settings['myDocuments:publicAccess'] > 1) return true
+      if (user.id === doc.owner) return true
+      return doc.writers.some(writer => writer.id === user.id)
+    case 'document:write':
+      var doc = yield orm.collections.document.findOne({id: data.id})
+      return user.id === doc.owner
+    default:
+      return null
     }
   })
 
