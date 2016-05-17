@@ -15,14 +15,6 @@
   margin-bottom: .25cm;
 }
 
-.MyDocuments__User {
-  padding-bottom: .25cm;
-  margin-bottom: .25cm;
-  border-bottom: 1px lightgrey solid;
-}
-.MyDocuments__User:last-child {
-  border-bottom: none;
-}
 .MyDocuments__User__name {
   width: 5cm;
   display: inline-block;

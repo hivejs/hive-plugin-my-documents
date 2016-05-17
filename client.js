@@ -430,9 +430,9 @@ function setup(plugin, imports, register) {
       ]))
   , h('div.MyDocuments__NewDocument__access', [
       h('h3', [h('i.glyphicon.glyphicon-user'), ' Collaborators'])
-    , h('div.MyDocuments__NewDocument__collaborators'
+    , h('ul.list-group.MyDocuments__NewDocument__collaborators'
       , vdomTableWithHeaderAndFallback(    
-          h('div.MyDocuments__User.hidden-xs',[
+          h('li.list-group-item.MyDocuments__User.hidden-xs',[
             h('span.MyDocuments__User__name')
           , h('label', [ h('i.glyphicon.glyphicon-eye-open', {title: 'read-only access'}), h('span.sr-only','read-only access')])
           , h('label', [ h('i.glyphicon.glyphicon-pencil', {title: 'full write access'}), h('span.sr-only', 'full write access')])
@@ -467,7 +467,7 @@ function setup(plugin, imports, register) {
 
   function renderUser(store, userId, access) {
     const user = store.getState().myDocuments.users[userId]
-    return h('div.MyDocuments__User.form-inline', [
+    return h('li.list-group-item.MyDocuments__User.form-inline', [
       h('span.MyDocuments__User__name', user? user.attributes.name : 'Loading...')
     , h('span.form-group.pull-right', h('button.close', {
         'aria-label': "Remove user"
